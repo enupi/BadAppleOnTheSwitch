@@ -33,6 +33,7 @@ TARGET		:=	bad_apple
 BUILD		:=	build
 SOURCES		:=	.
 INCLUDES	:=	.
+ROMFS		:=	romfs
 #DATA		:=	data
 EXEFS_SRC	:=	exefs_src
 
@@ -60,7 +61,7 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 #LIBS	:=-lSDL2 -lm -lnx
-LIBS	:= -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lm -lnx
+LIBS	:= -lSDL2_mixer -lSDL2 -lmpg123 -lmodplug -lvorbisidec -logg -lopusfile -lopus -lflac -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lm -lnx
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -138,6 +139,10 @@ endif
 
 ifneq ($(APP_TITLEID),)
 	export NACPFLAGS += --titleid=$(APP_TITLEID)
+endif
+
+ifneq ($(ROMFS),)
+	export NROFLAGS += --romfsdir=$(CURDIR)/$(ROMFS)
 endif
 
 .PHONY: $(BUILD) clean all

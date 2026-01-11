@@ -4,10 +4,10 @@
 
 Graphics* init()
 {
-	if(SDL_Init(SDL_INIT_VIDEO) < 0) {
-		printf("SDL init failed: %s\n", SDL_GetError());
-		return 0;
-	}
+	//if(SDL_Init(SDL_INIT_VIDEO) < 0) {
+	//	printf("SDL init failed: %s\n", SDL_GetError());
+	//	return 0;
+	//}
 
 	printf("initialized SDL\n");
 	Graphics* g = malloc(sizeof (Graphics));
@@ -53,15 +53,13 @@ void update(struct Graphics* g)
         SDL_UpdateWindowSurface(g->window);
 }
 
-// puts a 3x3 "pixel" on screen at the given x, y with the given r, g, b
+// puts a nxn "pixel" on screen at the given x, y with the given r, g, b
 // will need update() called after to display any pixels that were created
-// the switch resolution is 1280x720, but the "pixels" used by this grid are 426x240
-void putAPixel(struct Graphics* gr, int xi, int yi, int x, int y, int r, int g, int b)
+void putAPixel(struct Graphics* gr, int xi, int yi, int x, int y, int dot_size, int r, int g, int b)
 {
-	// int num = (r << 24) | (g << 16) | (b << 8) | 0; //不要なのだ
-    int dot_size = 15; // ドットのサイズ
+    // int dot_size = 15; // ドットのサイズ
 	
-    // 長方形の描画(3×3ピクセル)
+    // 正方形の描画(n×nピクセル)
 	SDL_Rect rect; 
 	rect.x = xi + dot_size * x;
 	rect.y = yi + dot_size * y;
@@ -75,18 +73,15 @@ void putAPixel(struct Graphics* gr, int xi, int yi, int x, int y, int r, int g, 
 // draws a string using our bitmap font (below) at the given xi, yi
 // the xi, yi given are on a 53x30 grid, (8x less than the "pixel" grid)
 // optional: provide r, g, b values, otherwise white
-void drawString(struct Graphics* gr, char* string, int xi, int yi)
+void drawString(struct Graphics* gr, char* string, int xi, int yi, int dot_size)
 {
-	drawColorString(gr, xi, yi, string, 0x00, 0x00, 0x00);
+	drawColorString(gr, xi, yi, dot_size, string, 0x00, 0x00, 0x00);
 }
 
-void drawColorString(struct Graphics* gr, int xi, int yi, char* string, int r, int g, int b)
+void drawColorString(struct Graphics* gr, int xi, int yi, int dot_size, char* string, int r, int g, int b)
 {
 	// for every character in the string, if it's within range, render it at the current position
 	// and move over 8 characters
-
-	xi *= 8;
-	yi *= 8;
 
 	char next = -1;
 	int i = 0;
@@ -99,10 +94,10 @@ void drawColorString(struct Graphics* gr, int xi, int yi, char* string, int r, i
 		{
 			char* bitmap = fontLookup(next);
 			int x, y;
-			for (x=0; x < 8; x++) {
-				for (y=0; y < 8; y++) {
-					if (bitmap[x] & 1 << y)
-						putAPixel(gr, xi, yi, y+i*8, x, r, g, b);
+			for (y=0; y < 8; y++) {
+				for (x=0; x < 8; x++) {
+					if (bitmap[y] & 1 << x)
+						putAPixel(gr, xi, yi, x+i*8, y, dot_size, r, g, b);
 				}
 			}
 		}
@@ -122,17 +117,22 @@ void videoBackground(struct Graphics* gr){
     SDL_FillRect(gr->window_surface, &rects[2], SDL_MapRGBA(gr->window_surface->format, 0x00, 0x00, 0x00, 0xFF));
 }
 
-void playVideo(struct Graphics* gr, int xi, int yi)
+void playVideo(struct Graphics* gr, PadState* pad, int xi, int yi)
 {
+    int dot_size = 15;
 
 	for(int i=0; i<5299; i++){
 
         if (!appletMainLoop()) break; // アプリ終了要請があったら抜ける
-        // hidScanInput(); // 入力状態の更新
-    
-        // Bボタンで再生キャンセルできるように（海の幸）
-        // u64 kDown = hidKeysDown(CONTROLLER_P1_AUTO);
-        // if (kDown & KEY_B) break;
+
+        // Scan the gamepad. This should be done once for each frame
+        padUpdate(pad);
+
+        // +ボタンで再生を終了できるように（海の幸）
+        u64 kDown = padGetButtonsDown(pad);
+        if (kDown & HidNpadButton_Plus){
+            break;
+        }
 
         videoBackground(gr);
 
@@ -143,13 +143,13 @@ void playVideo(struct Graphics* gr, int xi, int yi)
 		for (y=0; y < 48; y++) {
 			for (x=0; x < 64; x++) {
 				if (bitmap[y] & 0b1000000000000000000000000000000000000000000000000000000000000000 >> x){
-					putAPixel(gr, xi, yi, x, y, 0x00, 0x00, 0x00);
+					putAPixel(gr, xi, yi, x, y, dot_size, 0x00, 0x00, 0x00);
 			    }
             }
 		}
 
         update(gr);
-        SDL_Delay(41);
+        SDL_Delay(35.6309);
     }
 	
 }

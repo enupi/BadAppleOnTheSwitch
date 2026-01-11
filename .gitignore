@@ -65,3 +65,5 @@ build/
 *.nro
 *.nso
 *.pfs0
+
+test/
